@@ -1,0 +1,104 @@
+/*
+ * Estilos de la aplicación según el Manual de Estilos Corporativo de San Miguelito:
+ * rojo principal #D21E1E, rojo oscuro #960A0A, naranja #F07814, amarillo #FFC800,
+ * azul #1EAADC, negro #141414, crema #FAF5EE, café #4A3020, verde éxito #388E3C.
+ * Tipografía: Arial.
+ */
+.root {
+    -fx-font-family: "Arial";
+    -fx-font-size: 14px;
+    -fx-background-color: #FAF5EE;
+    -fx-text-fill: #4A3020;
+    -fx-accent: #D21E1E;
+    -fx-focus-color: #F07814;
+    -fx-faint-focus-color: rgba(240,120,20,0.20);
+}
+
+.label { -fx-text-fill: #4A3020; }
+
+/* ---------- barra lateral ---------- */
+.barra-lateral { -fx-background-color: #D21E1E; -fx-padding: 0 0 16 0; }
+.marca { -fx-background-color: #960A0A; -fx-padding: 18 16 16 16; }
+.marca-titulo { -fx-text-fill: #FFFFFF; -fx-font-size: 19px; -fx-font-weight: bold; }
+.marca-sub { -fx-text-fill: #FFC800; -fx-font-size: 10px; -fx-font-weight: bold; }
+.menu-boton {
+    -fx-background-color: transparent; -fx-text-fill: #FFFFFF; -fx-font-size: 15px;
+    -fx-alignment: CENTER-LEFT; -fx-padding: 11 18 11 18; -fx-background-radius: 0; -fx-cursor: hand;
+}
+.menu-boton:hover { -fx-background-color: #F07814; }
+.menu-activo { -fx-background-color: #FAF5EE; -fx-text-fill: #D21E1E; -fx-font-weight: bold; }
+.menu-activo:hover { -fx-background-color: #FAF5EE; }
+.usuario-sesion { -fx-text-fill: #FFFFFF; -fx-font-size: 13px; }
+.rol-sesion { -fx-text-fill: #FFC800; -fx-font-size: 12px; -fx-font-weight: bold; }
+
+/* ---------- encabezados ---------- */
+.titulo-modulo { -fx-text-fill: #960A0A; -fx-font-size: 24px; -fx-font-weight: bold; }
+.subtitulo { -fx-text-fill: #4A3020; -fx-font-size: 14px; }
+.etiqueta { -fx-text-fill: #960A0A; -fx-font-size: 12px; -fx-font-weight: bold; }
+.seccion { -fx-text-fill: #D21E1E; -fx-font-size: 16px; -fx-font-weight: bold; }
+
+/* ---------- tarjetas ---------- */
+.tarjeta {
+    -fx-background-color: #FFFFFF; -fx-background-radius: 10; -fx-border-radius: 10;
+    -fx-border-color: #E8D8C8; -fx-border-width: 1;
+}
+.indicador { -fx-background-radius: 10; -fx-padding: 16; }
+.indicador-valor { -fx-text-fill: #FFFFFF; -fx-font-size: 28px; -fx-font-weight: bold; }
+.indicador-texto { -fx-text-fill: #FFFFFF; -fx-font-size: 13px; -fx-font-weight: bold; }
+.ind-rojo { -fx-background-color: #D21E1E; }
+.ind-naranja { -fx-background-color: #F07814; }
+.ind-azul { -fx-background-color: #1EAADC; }
+.ind-oscuro { -fx-background-color: #960A0A; }
+
+/* ---------- botones ---------- */
+.button { -fx-font-size: 14px; -fx-background-radius: 6; -fx-padding: 8 16 8 16; -fx-cursor: hand; }
+.btn-primario { -fx-background-color: #D21E1E; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; }
+.btn-secundario { -fx-background-color: #FAF5EE; -fx-text-fill: #D21E1E; -fx-border-color: #D21E1E; -fx-border-radius: 6; -fx-font-weight: bold; }
+.btn-peligro { -fx-background-color: #960A0A; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; }
+.btn-exito { -fx-background-color: #388E3C; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; }
+.btn-primario:hover, .btn-secundario:hover, .btn-peligro:hover, .btn-exito:hover {
+    -fx-background-color: #F07814; -fx-text-fill: #FFFFFF; -fx-border-color: #F07814;
+}
+.button:disabled { -fx-opacity: 0.45; }
+
+/* ---------- campos ---------- */
+.text-field, .password-field, .combo-box, .date-picker, .spinner {
+    -fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: #E8D8C8; -fx-background-color: #FFFFFF;
+}
+.text-field:focused, .password-field:focused { -fx-border-color: #F07814; }
+.total-venta { -fx-text-fill: #960A0A; -fx-font-size: 30px; -fx-font-weight: bold; }
+
+/* ---------- tablas (encabezado rojo oscuro, filas alternas crema) ---------- */
+.table-view { -fx-background-color: #FFFFFF; -fx-border-color: #E8D8C8; -fx-background-radius: 8; -fx-border-radius: 8; }
+.table-view .column-header, .table-view .column-header-background, .table-view .filler {
+    -fx-background-color: #960A0A;
+}
+.table-view .column-header .label { -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-font-size: 13px; }
+.table-row-cell { -fx-background-color: #FFFFFF; -fx-text-fill: #141414; -fx-table-cell-border-color: #E8D8C8; }
+.table-row-cell:odd { -fx-background-color: #FFF8EE; }
+.table-row-cell:selected { -fx-background-color: #FFC800; }
+.table-row-cell:selected .table-cell { -fx-text-fill: #141414; }
+.table-cell { -fx-text-fill: #141414; -fx-font-size: 13px; }
+.fila-agotado { -fx-background-color: #FBE3E3; }
+.fila-pocas { -fx-background-color: #FFF3C4; }
+.fila-inactivo .table-cell { -fx-text-fill: #9A8C80; }
+
+/* ---------- etiquetas de estado ---------- */
+.estado { -fx-padding: 3 10 3 10; -fx-background-radius: 10; -fx-font-size: 12px; -fx-font-weight: bold; }
+.estado-ok { -fx-background-color: #D8EED9; -fx-text-fill: #1F5E22; }
+.estado-pocas { -fx-background-color: #FFE89A; -fx-text-fill: #5A4300; }
+.estado-agotado { -fx-background-color: #960A0A; -fx-text-fill: #FFFFFF; }
+
+/* ---------- login ---------- */
+.login-fondo { -fx-background-color: linear-gradient(to bottom right, #D21E1E, #960A0A); }
+.login-panel { -fx-background-color: #FFFFFF; -fx-background-radius: 14; -fx-padding: 34; }
+.login-titulo { -fx-text-fill: #D21E1E; -fx-font-size: 30px; -fx-font-weight: bold; }
+.login-sub { -fx-text-fill: #141414; -fx-font-size: 16px; -fx-font-weight: bold; }
+.franja { -fx-background-color: #FFC800; }
+.mensaje-error { -fx-text-fill: #960A0A; -fx-font-weight: bold; }
+.nota { -fx-text-fill: #6B5444; -fx-font-size: 12px; }
+
+.dialog-pane { -fx-background-color: #FAF5EE; }
+.dialog-pane > .header-panel { -fx-background-color: #D21E1E; }
+.dialog-pane > .header-panel .label { -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-font-size: 15px; }
+.dialog-pane .button { -fx-background-color: #D21E1E; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; }
