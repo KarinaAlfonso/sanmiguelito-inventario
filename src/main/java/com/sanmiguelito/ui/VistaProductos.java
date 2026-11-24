@@ -29,7 +29,7 @@ public class VistaProductos {
 
     public Node vista() {
         buscar.setPromptText("Buscar por nombre, código o categoría");
-        Ui.limitar(buscar, 60);
+        Ui.filtrar(buscar, Entrada.BUSQUEDA, 60);
         buscar.setPrefWidth(360);
         buscar.textProperty().addListener((o, a, n) -> cargar());
         inactivos.selectedProperty().addListener((o, a, n) -> cargar());

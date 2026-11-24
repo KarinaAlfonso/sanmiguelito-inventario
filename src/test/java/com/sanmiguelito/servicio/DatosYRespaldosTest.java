@@ -224,6 +224,19 @@ class DatosYRespaldosTest extends BaseServicios {
         assertThrows(ErrorNegocio.class, () -> Formato.leerEntero(null, "Cantidad"));
     }
 
+    @ParameterizedTest(name = "«{0}» en {1} → «{2}»")
+    @CsvSource(delimiter = '|', value = {
+            "Ñandú Pérez|NOMBRE_PERSONA|Ñandú Pérez", "Ana123|NOMBRE_PERSONA|Ana", "<script>|NOMBRE_PERSONA|script",
+            "Aseo 2|CATEGORIA|'Aseo '", "Escoba #1 😀|NOMBRE_PRODUCTO|'Escoba 1 '", "maría.lópez|USUARIO|mara.lpez",
+            "Compra @ proveedor|MOTIVO|Compra  proveedor"})
+    @DisplayName("Los campos de texto solo dejan escribir o pegar los caracteres permitidos")
+    void filtrosDeEntrada(String texto, String tipo, String esperado) throws Exception {
+        String clase = (String) com.sanmiguelito.ui.Entrada.class.getField(tipo).get(null);
+        assertEquals(esperado, com.sanmiguelito.ui.Entrada.filtrar(texto, clase));
+        assertEquals("tab salto", com.sanmiguelito.ui.Entrada.filtrar("tab\tsalto", com.sanmiguelito.ui.Entrada.CATEGORIA));
+        assertEquals("125", com.sanmiguelito.ui.Entrada.soloDigitos("1-2.5"));
+    }
+
     @Test
     @DisplayName("Formato de pesos y fechas")
     void formatos() {

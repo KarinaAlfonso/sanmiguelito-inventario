@@ -68,10 +68,10 @@ public class VistaUsuarios {
         ButtonType guardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
         Dialog<ButtonType> d = dialogo(nuevo ? "Nuevo usuario" : "Modificar usuario",
                 nuevo ? "Registrar un usuario" : "Modificar el usuario «" + u.usuario + "»", guardar);
-        TextField login = Ui.limitar(new TextField(nuevo ? "" : u.usuario), 20);
+        TextField login = Ui.filtrar(new TextField(nuevo ? "" : u.usuario), Entrada.USUARIO, 20);
         login.setPromptText("Ej.: maria.lopez");
         login.setDisable(!nuevo);
-        TextField nombre = Ui.limitar(new TextField(nuevo ? "" : u.nombreCompleto), 60);
+        TextField nombre = Ui.filtrar(new TextField(nuevo ? "" : u.nombreCompleto), Entrada.NOMBRE_PERSONA, 60);
         nombre.setPrefWidth(320);
         ComboBox<Rol> rol = new ComboBox<>();
         rol.getItems().setAll(Rol.values());

@@ -25,7 +25,7 @@ public class VistaMovimientos {
     private final TableView<Movimiento> tabla = Ui.tabla("No hay movimientos con los filtros seleccionados.");
     private final DatePicker desde = Ui.fecha(LocalDate.now().minusDays(30));
     private final DatePicker hasta = Ui.fecha(LocalDate.now());
-    private final TextField producto = Ui.limitar(new TextField(), 60);
+    private final TextField producto = Ui.filtrar(new TextField(), Entrada.BUSQUEDA, 60);
     private final ComboBox<String> tipo = new ComboBox<>();
     private final Label resumen = new Label();
 

@@ -50,7 +50,7 @@ public class VistaLogin {
         titulo.getStyleClass().add("login-titulo");
         Label sub = new Label("Ingrese su usuario y contraseña");
         sub.getStyleClass().add("subtitulo");
-        TextField usuario = Ui.limitar(new TextField(), 20);
+        TextField usuario = Ui.filtrar(new TextField(), Entrada.USUARIO, 20);
         usuario.setPromptText("Usuario");
         usuario.setPrefHeight(40);
         PasswordField clave = Ui.limitar(new PasswordField(), 64);

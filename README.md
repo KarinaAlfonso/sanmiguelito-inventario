@@ -11,7 +11,7 @@ Karina Lucero Alfonso Valderrama, Yirman Alejandro Fonseca Suarez y Juan Esteban
 | JavaFX 21 + CSS | Interfaz gráfica con los colores del manual de estilos de la empresa |
 | Jackson | Lectura y escritura de los archivos JSON (arquitectura de servidor de archivos) |
 | OpenPDF | Comprobante de venta y reportes en PDF |
-| JUnit 5 + JaCoCo | 184 pruebas automáticas de las reglas del negocio e informe de cobertura |
+| JUnit 5 + JaCoCo | 191 pruebas automáticas de las reglas del negocio e informe de cobertura |
 | Maven | Dependencias y construcción |
 | jpackage | Ejecutable de Windows con Java incluido |
 
@@ -52,7 +52,7 @@ src/test/java/       ProductosTest, InventarioYVentasTest, UsuariosYSeguridadTes
 Requisitos: JDK 21 y Maven 3.9.
 
 ```
-mvn clean package          # compila y ejecuta las 184 pruebas; cobertura en target\site\jacoco\index.html
+mvn clean package          # compila y ejecuta las 191 pruebas; cobertura en target\site\jacoco\index.html
 .\empaquetar.ps1           # genera target\dist\SanMiguelito\SanMiguelito.exe y el .zip
 ```
 

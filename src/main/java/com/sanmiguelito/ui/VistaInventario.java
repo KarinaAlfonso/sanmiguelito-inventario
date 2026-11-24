@@ -36,7 +36,7 @@ public class VistaInventario {
 
     private final Contexto ctx;
     private final TableView<Producto> productos = Ui.tabla("No hay productos que coincidan con la búsqueda.");
-    private final TextField buscar = Ui.limitar(new TextField(), 60);
+    private final TextField buscar = Ui.filtrar(new TextField(), Entrada.BUSQUEDA, 60);
     private final Label vacio = new Label();
     private final RadioButton entrada = new RadioButton("Entrada (mercancía recibida)");
     private final RadioButton salida = new RadioButton("Salida (daño, pérdida, uso interno)");
@@ -88,7 +88,7 @@ public class VistaInventario {
         motivo.setEditable(true);
         motivo.setMaxWidth(Double.MAX_VALUE);
         motivo.setPromptText("Seleccione o escriba");
-        Ui.limitar(motivo.getEditor(), ServicioInventario.LONGITUD_MOTIVO);
+        Ui.filtrar(motivo.getEditor(), Entrada.MOTIVO, ServicioInventario.LONGITUD_MOTIVO);
         motivo.getItems().setAll(MOTIVOS_ENTRADA);
         entrada.selectedProperty().addListener((o, a, esEntrada) -> {
             motivo.getItems().setAll(esEntrada ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA);

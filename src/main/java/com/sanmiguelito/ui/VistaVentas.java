@@ -36,7 +36,7 @@ public class VistaVentas {
     public Node vista() {
         // ---------------- catálogo
         buscar.setPromptText("Buscar por nombre, código o categoría");
-        Ui.limitar(buscar, 60);
+        Ui.filtrar(buscar, Entrada.BUSQUEDA, 60);
         buscar.textProperty().addListener((o, a, n) -> cargarProductos());
         productos.getColumns().add(Ui.columna("Código", 80, p -> p.codigo));
         productos.getColumns().add(Ui.columna("Producto", 220, p -> p.nombre));

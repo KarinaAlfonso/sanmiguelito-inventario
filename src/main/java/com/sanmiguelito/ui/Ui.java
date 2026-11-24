@@ -255,16 +255,33 @@ public final class Ui {
 
     /** El campo solo acepta dígitos (sin signos, letras, decimales ni espacios) y como máximo {@code max} cifras. */
     public static javafx.scene.control.TextField soloDigitos(javafx.scene.control.TextField campo, int max) {
-        campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c ->
-                c.getControlNewText().matches("\\d{0," + max + "}") ? c : null));
+        campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c -> {
+            if (c.isContentChange() && c.getText() != null && !c.getText().isEmpty()) {
+                String t = c.getText().trim();
+                // Al pegar algo como «4.5», «-5» o «12 unidades» no se adivina: se rechaza completo.
+                if (!t.matches("\\d*")) return null;
+                c.setText(t);
+                c.selectRange(c.getRangeStart() + t.length(), c.getRangeStart() + t.length());
+            }
+            return c.getControlNewText().matches("\\d{0," + max + "}") ? c : null;
+        }));
         return campo;
     }
 
     /** Campo de precio: acepta dígitos y puntos de miles (12.500) hasta {@code max} cifras. */
     public static javafx.scene.control.TextField pesos(javafx.scene.control.TextField campo, int max) {
         campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c -> {
+            if (c.isContentChange() && c.getText() != null && !c.getText().isEmpty()) {
+                // Al pegar «$ 4.500» quedan los dígitos y los puntos de miles; algo como «4,5», «-500»
+                // o «1e5» se rechaza completo en lugar de convertirlo en otro valor.
+                if (!c.getText().matches("[\\s$]*[\\d.]+\\s*") && !c.getText().matches("[\\d.]*")) return null;
+                String limpio = c.getText().replaceAll("[^0-9.]", "");
+                if (limpio.isEmpty()) return null;
+                c.setText(limpio);
+                c.selectRange(c.getRangeStart() + limpio.length(), c.getRangeStart() + limpio.length());
+            }
             String t = c.getControlNewText();
-            return t.matches("[\\d.]*") && t.replace(".", "").length() <= max ? c : null;
+            return t.matches("[\\d.]*") && t.replace(".", "").length() <= max && t.length() <= max + 3 ? c : null;
         }));
         return campo;
     }
@@ -273,6 +290,27 @@ public final class Ui {
     public static <C extends javafx.scene.control.TextInputControl> C limitar(C campo, int max) {
         campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c ->
                 c.getControlNewText().length() <= max ? c : null));
+        return campo;
+    }
+
+    /**
+     * Limita el largo y solo deja escribir o pegar los caracteres permitidos (ver {@link Entrada}).
+     * Si se pega un texto con caracteres no permitidos, se conservan los válidos; si se pasa del
+     * largo máximo, se recorta.
+     */
+    public static <C extends javafx.scene.control.TextInputControl> C filtrar(C campo, String permitidos, int max) {
+        campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c -> {
+            if (c.isContentChange() && c.getText() != null && !c.getText().isEmpty()) {
+                String limpio = Entrada.filtrar(c.getText(), permitidos);
+                int disponible = max - (c.getControlText().length() - (c.getRangeEnd() - c.getRangeStart()));
+                if (disponible <= 0) return null;
+                if (limpio.length() > disponible) limpio = limpio.substring(0, disponible);
+                if (limpio.isEmpty()) return null;
+                c.setText(limpio);
+                c.selectRange(c.getRangeStart() + limpio.length(), c.getRangeStart() + limpio.length());
+            }
+            return c.getControlNewText().length() <= max ? c : null;
+        }));
         return campo;
     }
 

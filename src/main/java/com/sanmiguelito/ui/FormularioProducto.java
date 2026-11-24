@@ -54,7 +54,7 @@ public final class FormularioProducto {
         categoria.setValue(nuevo ? null : existente.categoria);
         categoria.setMaxWidth(Double.MAX_VALUE);
         categoria.setVisibleRowCount(12);
-        Ui.limitar(categoria.getEditor(), 30);
+        Ui.filtrar(categoria.getEditor(), Entrada.CATEGORIA, 30);
 
         TextField codigo = new TextField(nuevo ? "" : existente.codigo);
         codigo.setEditable(false);
@@ -62,8 +62,8 @@ public final class FormularioProducto {
         codigo.setPromptText("Elija la categoría");
         codigo.setStyle("-fx-background-color: #F3ECE3; -fx-font-weight: bold;");
 
-        TextField nombre = Ui.limitar(new TextField(nuevo ? (nombreSugerido == null ? "" : nombreSugerido.trim()) : existente.nombre),
-                ServicioProductos.LONGITUD_NOMBRE);
+        TextField nombre = Ui.filtrar(new TextField(nuevo ? (nombreSugerido == null ? "" : nombreSugerido.trim()) : existente.nombre),
+                Entrada.NOMBRE_PRODUCTO, ServicioProductos.LONGITUD_NOMBRE);
         nombre.setPromptText("Ej.: Escoba de cerdas suaves");
         nombre.setPrefWidth(440);
         Label aviso = new Label();
@@ -83,8 +83,13 @@ public final class FormularioProducto {
         avisoPrecio.setStyle("-fx-font-size: 11px;");
         avisoPrecio.setMinHeight(16);
         Runnable revisarPrecio = () -> {
-            String t = precio.getText() == null ? "" : precio.getText().replace(".", "");
+            String escrito = precio.getText() == null ? "" : precio.getText();
+            String t = escrito.replace(".", "");
             if (t.isEmpty()) { avisoPrecio.setText(""); return; }
+            if (escrito.contains(".") && !escrito.matches("\\d{1,3}(\\.\\d{3})+")) {
+                avisoPrecio.setText("El punto solo separa los miles (ej.: 4.500). Sin decimales.");
+                return;
+            }
             long v = Long.parseLong(t);
             long min = ServicioProductos.PRECIO_MINIMO;
             if (v < min) avisoPrecio.setText("El precio mínimo es " + Formato.pesos(min) + ".");
