@@ -1,4 +1,4 @@
-﻿# Sistema de Gestión de Ventas e Inventario — Cacharrería San Miguelito
+# Sistema de Gestión de Ventas e Inventario — Cacharrería San Miguelito
 
 Aplicación de escritorio (versión Beta 1.0) desarrollada para la asignatura Ingeniería de Software I (UPTC, 2026) por
 Karina Lucero Alfonso Valderrama, Yirman Alejandro Fonseca Suarez y Juan Esteban García Álvarez.
