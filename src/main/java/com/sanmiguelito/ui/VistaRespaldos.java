@@ -64,7 +64,8 @@ public class VistaRespaldos {
 
         Label nota = new Label("Las copias se guardan en " + ctx.repo.carpetaRespaldos()
                 + ". Se recomienda crear una copia al final de cada día y guardarla también en la memoria USB del establecimiento.\n"
-                + "Antes de restaurar, el sistema crea automáticamente una copia del estado actual.");
+                + "El sistema también crea una copia automática cada día y conserva las 15 más recientes. "
+                + "Antes de restaurar, revisa que el respaldo no esté dañado y crea una copia del estado actual.");
         nota.getStyleClass().add("nota");
         nota.setWrapText(true);
         VBox v = new VBox(16, Ui.encabezado("Copias de seguridad",

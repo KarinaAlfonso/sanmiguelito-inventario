@@ -86,7 +86,19 @@ public class Capturas extends Application {
         VistaProductos vprod = new VistaProductos(ctx);
         stage.setScene(new Scene(marco(ctx, "Productos", vprod.vista()), 1366, 768));
         Ui.aplicarEstilos(stage.getScene());
-        dialogo("16_formulario_producto_nuevo", vprod, "formulario", Producto.class, null);
+        // Formulario nuevo con la categoría elegida (código automático) y un nombre repetido (aviso en rojo).
+        dialogo("16_formulario_producto_nuevo", vprod, "formulario", Producto.class, null, escena -> {
+            for (javafx.scene.Node n : escena.getRoot().lookupAll(".combo-box"))
+                if (n instanceof javafx.scene.control.ComboBox<?> c && c.isEditable()) {
+                    @SuppressWarnings("unchecked") var cb = (javafx.scene.control.ComboBox<String>) c;
+                    cb.setValue("Aseo");
+                }
+            for (javafx.scene.Node n : escena.getRoot().lookupAll(".text-field"))
+                if (n instanceof javafx.scene.control.TextField t && t.getPromptText() != null) {
+                    if (t.getPromptText().startsWith("Ej.: Escoba")) t.setText("ESCOBA");
+                    if (t.getPromptText().startsWith("Mínimo 50")) t.setText("7000");
+                }
+        });
         dialogo("17_formulario_producto_modificar", vprod, "formulario", Producto.class, ctx.productos.porCodigo("PAP-001").orElseThrow());
         VistaUsuarios vusu = new VistaUsuarios(ctx);
         stage.setScene(new Scene(marco(ctx, "Usuarios", vusu.vista()), 1366, 768));
@@ -114,17 +126,31 @@ public class Capturas extends Application {
 
     /** Abre un formulario modal privado de una vista y guarda la imagen del diálogo. */
     private void dialogo(String nombre, Object vista, String metodo, Class<?> tipoArg, Object arg) throws Exception {
+        dialogo(nombre, vista, metodo, tipoArg, arg, escena -> { });
+    }
+
+    private void dialogo(String nombre, Object vista, String metodo, Class<?> tipoArg, Object arg,
+                         java.util.function.Consumer<Scene> preparar) throws Exception {
         Platform.runLater(() -> Platform.runLater(() -> {
             for (javafx.stage.Window w : new java.util.ArrayList<>(javafx.stage.Window.getWindows())) {
                 if (w instanceof Stage s && s.getModality() != javafx.stage.Modality.NONE && s.isShowing()) {
                     try {
+                        preparar.accept(s.getScene());
                         s.getScene().getRoot().applyCss();
                         s.getScene().getRoot().layout();
-                        ImageIO.write(SwingFXUtils.fromFXImage(s.getScene().snapshot(null), null), "png",
-                                salida.resolve(nombre + ".png").toFile());
-                        System.out.println("dialogo " + nombre);
+                        s.sizeToScene();
                     } catch (Exception e) { e.printStackTrace(); }
-                    s.close();
+                    // La imagen se toma en el siguiente ciclo, cuando la ventana ya tomó su nuevo tamaño.
+                    Platform.runLater(() -> {
+                        try {
+                            s.getScene().getRoot().applyCss();
+                            s.getScene().getRoot().layout();
+                            ImageIO.write(SwingFXUtils.fromFXImage(s.getScene().snapshot(null), null), "png",
+                                    salida.resolve(nombre + ".png").toFile());
+                            System.out.println("dialogo " + nombre);
+                        } catch (Exception e) { e.printStackTrace(); }
+                        s.close();
+                    });
                 }
             }
         }));
