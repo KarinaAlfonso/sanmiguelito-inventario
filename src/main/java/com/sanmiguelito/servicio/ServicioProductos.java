@@ -18,7 +18,7 @@ public class ServicioProductos {
 
     public static final int LONGITUD_NOMBRE = 60;
     public static final long PRECIO_MAXIMO = 99_999_950L;
-    /** Moneda de menor valor en circulación en Colombia: los precios son múltiplos de 50 pesos. */
+    /** Precio mínimo de venta; los precios se manejan en múltiplos de este valor. */
     public static final long PRECIO_MINIMO = 50L;
     public static final int CANTIDAD_MAXIMA = 999_999;
 
@@ -165,11 +165,10 @@ public class ServicioProductos {
                     + "\nNo se permiten productos repetidos, aunque se escriban con mayúsculas, minúsculas o tildes diferentes.");
         });
         if (p.precioVenta < PRECIO_MINIMO)
-            throw new ErrorNegocio("El precio de venta mínimo es " + Formato.pesos(PRECIO_MINIMO)
-                    + ", la moneda de menor valor en Colombia.");
+            throw new ErrorNegocio("El precio de venta mínimo es " + Formato.pesos(PRECIO_MINIMO) + ".");
         if (p.precioVenta % PRECIO_MINIMO != 0)
-            throw new ErrorNegocio("El precio debe ser múltiplo de $ 50, porque en Colombia no circulan monedas de menor valor. "
-                    + "Por ejemplo: " + Formato.pesos(p.precioVenta / PRECIO_MINIMO * PRECIO_MINIMO) + " o "
+            throw new ErrorNegocio("El precio debe ir en múltiplos de " + Formato.pesos(PRECIO_MINIMO) + ". Puede usar "
+                    + Formato.pesos(p.precioVenta / PRECIO_MINIMO * PRECIO_MINIMO) + " o "
                     + Formato.pesos((p.precioVenta / PRECIO_MINIMO + 1) * PRECIO_MINIMO) + ".");
         if (p.precioVenta > PRECIO_MAXIMO) throw new ErrorNegocio("El precio de venta no puede superar " + Formato.pesos(PRECIO_MAXIMO) + ".");
         if (p.cantidadMinima < 0) throw new ErrorNegocio("La cantidad mínima no puede ser negativa.");
