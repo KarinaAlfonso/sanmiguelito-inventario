@@ -12,7 +12,18 @@ New-Item -ItemType Directory -Force $entrada | Out-Null
 Copy-Item target\sanmiguelito.jar $entrada
 Copy-Item target\lib\*.jar $entrada
 
+# Entorno de Java reducido: solo los módulos que usa la aplicación (calculados con jdeps) y los
+# formatos de fecha y número en español. Así el ejecutable pesa mucho menos.
+$runtime = "target\runtime"
+if (Test-Path $runtime) { Remove-Item $runtime -Recurse -Force }
+jlink --add-modules java.base,java.desktop,java.sql,java.logging,java.xml,jdk.unsupported,jdk.jfr,jdk.localedata `
+  --include-locales=es,en `
+  --strip-debug --no-header-files --no-man-pages --compress=zip-9 `
+  --output $runtime
+if ($LASTEXITCODE -ne 0) { throw "jlink falló." }
+
 jpackage --type app-image `
+  --runtime-image $runtime `
   --name SanMiguelito `
   --app-version 1.0.0 `
   --vendor "Cacharreria San Miguelito" `
