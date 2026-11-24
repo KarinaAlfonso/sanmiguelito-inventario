@@ -98,6 +98,16 @@
 .mensaje-error { -fx-text-fill: #960A0A; -fx-font-weight: bold; }
 .nota { -fx-text-fill: #6B5444; -fx-font-size: 12px; }
 
+/* ---------- barra de la ventana en pantalla completa ---------- */
+.barra-ventana { -fx-background-color: #7A0808; -fx-padding: 0 0 0 14; -fx-pref-height: 32; -fx-min-height: 32; }
+.barra-ventana-titulo { -fx-text-fill: #FFFFFF; -fx-font-size: 12px; -fx-font-weight: bold; }
+.boton-ventana, .boton-ventana-cerrar {
+    -fx-background-color: transparent; -fx-text-fill: #FFFFFF; -fx-font-size: 14px; -fx-background-radius: 0;
+    -fx-padding: 0; -fx-pref-width: 46; -fx-pref-height: 32; -fx-min-height: 32; -fx-cursor: hand;
+}
+.boton-ventana:hover { -fx-background-color: rgba(255,255,255,0.18); }
+.boton-ventana-cerrar:hover { -fx-background-color: #E81123; }
+
 .dialog-pane { -fx-background-color: #FAF5EE; }
 .dialog-pane > .header-panel { -fx-background-color: #D21E1E; }
 .dialog-pane > .header-panel .label { -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-font-size: 15px; }

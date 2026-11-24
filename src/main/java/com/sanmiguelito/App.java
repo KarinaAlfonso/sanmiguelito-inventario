@@ -26,6 +26,7 @@ public class App extends Application {
     private Contexto ctx;
     private Stage ventana;
     private VistaPrincipal principal;
+    private Scene escena;
     private FileChannel canalBloqueo;
     private FileLock bloqueo;
 
@@ -58,8 +59,71 @@ public class App extends Application {
                 ? "Hay una venta en curso sin confirmar. Si sale, se descartará.\n¿Desea salir del sistema?"
                 : "¿Desea salir del sistema?");
         stage.setOnCloseRequest(e -> { if (!Ui.puedeSalir.getAsBoolean()) e.consume(); });
+
+        // Una sola escena para toda la sesión: al iniciar o cerrar sesión solo cambia su contenido,
+        // así la ventana conserva su tamaño. El sistema ocupa toda la pantalla (sin la barra de tareas
+        // de Windows) y tiene su propia barra con los botones minimizar, restaurar y cerrar.
+        escena = new Scene(new javafx.scene.layout.StackPane(), 1280, 760);
+        Ui.aplicarEstilos(escena);
+        escena.setOnKeyPressed(e -> { if (e.getCode() == javafx.scene.input.KeyCode.F11) pantallaCompleta(!stage.isFullScreen()); });
+        stage.setScene(escena);
+        stage.setMinWidth(900);
+        stage.setMinHeight(600);
+        stage.setFullScreenExitHint("");
+        stage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);
+        stage.maximizedProperty().addListener((o, antes, maximizada) -> {
+            if (maximizada && !stage.isFullScreen())
+                Platform.runLater(() -> { if (stage.isMaximized() && !stage.isFullScreen()) pantallaCompleta(true); });
+        });
         mostrarLogin(primerUso);
         stage.show();
+        pantallaCompleta(true);
+    }
+
+    /**
+     * Pantalla completa, o ventana normal («restaurar»). En la ventana normal, el botón maximizar de
+     * Windows vuelve a poner el sistema en pantalla completa.
+     */
+    private void pantallaCompleta(boolean completa) {
+        if (completa) {
+            ventana.setFullScreen(true);
+        } else {
+            ventana.setFullScreen(false);
+            ventana.setMaximized(false);
+            ventana.setWidth(Math.min(1280, javafx.stage.Screen.getPrimary().getVisualBounds().getWidth()));
+            ventana.setHeight(Math.min(760, javafx.stage.Screen.getPrimary().getVisualBounds().getHeight()));
+            ventana.centerOnScreen();
+        }
+    }
+
+    /** Barra superior propia que se muestra en pantalla completa, con los botones de la ventana. */
+    private javafx.scene.Parent conBarra(javafx.scene.Parent contenido) {
+        javafx.scene.control.Label titulo = new javafx.scene.control.Label("San Miguelito");
+        titulo.getStyleClass().add("barra-ventana-titulo");
+        javafx.scene.control.Button minimizar = botonVentana("—", "Minimizar", false);
+        minimizar.setOnAction(e -> ventana.setIconified(true));
+        javafx.scene.control.Button restaurar = botonVentana("❐", "Salir de pantalla completa (F11)", false);
+        restaurar.setOnAction(e -> pantallaCompleta(false));
+        javafx.scene.control.Button cerrar = botonVentana("✕", "Cerrar", true);
+        cerrar.setOnAction(e -> Ui.salir());
+        javafx.scene.layout.Region espacio = new javafx.scene.layout.Region();
+        javafx.scene.layout.HBox.setHgrow(espacio, javafx.scene.layout.Priority.ALWAYS);
+        javafx.scene.layout.HBox barra = new javafx.scene.layout.HBox(titulo, espacio, minimizar, restaurar, cerrar);
+        barra.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        barra.getStyleClass().add("barra-ventana");
+        barra.visibleProperty().bind(ventana.fullScreenProperty());
+        barra.managedProperty().bind(ventana.fullScreenProperty());
+        javafx.scene.layout.BorderPane raiz = new javafx.scene.layout.BorderPane(contenido);
+        raiz.setTop(barra);
+        return raiz;
+    }
+
+    private static javafx.scene.control.Button botonVentana(String simbolo, String ayuda, boolean cerrar) {
+        javafx.scene.control.Button b = new javafx.scene.control.Button(simbolo);
+        b.getStyleClass().add(cerrar ? "boton-ventana-cerrar" : "boton-ventana");
+        b.setTooltip(new javafx.scene.control.Tooltip(ayuda));
+        b.setFocusTraversable(false);
+        return b;
     }
 
     @Override
@@ -152,12 +216,7 @@ public class App extends Application {
             ctx.iniciarSesion(u);
             mostrarPrincipal();
         });
-        Scene s = new Scene(login.vista(), 960, 620);
-        Ui.aplicarEstilos(s);
-        ventana.setScene(s);
-        ventana.setMinWidth(900);
-        ventana.setMinHeight(600);
-        ventana.setMaximized(true);
+        escena.setRoot(conBarra(login.vista()));
     }
 
     private void mostrarPrincipal() {
@@ -165,9 +224,6 @@ public class App extends Application {
             ctx.cerrarSesion();
             mostrarLogin(false);
         });
-        Scene s = new Scene(principal.vista(), 1280, 760);
-        Ui.aplicarEstilos(s);
-        ventana.setScene(s);
-        ventana.setMaximized(true);
+        escena.setRoot(conBarra(principal.vista()));
     }
 }
