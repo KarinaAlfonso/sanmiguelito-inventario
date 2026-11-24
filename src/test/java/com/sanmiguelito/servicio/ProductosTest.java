@@ -73,6 +73,16 @@ class ProductosTest extends BaseServicios {
     }
 
     @Test
+    @DisplayName("Mientras se escribe, se reconoce la categoría existente que empieza igual")
+    void categoriaQueEmpiezaIgual() {
+        assertTrue(Categorias.empiezaIgual("Papelería", "pap"));
+        assertTrue(Categorias.empiezaIgual("Juguetería", "JUGUE"));
+        assertFalse(Categorias.empiezaIgual("Papelería", "papelería"), "si ya es igual, no es una sugerencia");
+        assertFalse(Categorias.empiezaIgual("Aseo", "ferre"));
+        assertFalse(Categorias.empiezaIgual("Aseo", "  "));
+    }
+
+    @Test
     @DisplayName("Las categorías predefinidas están disponibles en el formulario")
     void categoriasPredefinidas() {
         List<String> c = ctx.productos.categorias();

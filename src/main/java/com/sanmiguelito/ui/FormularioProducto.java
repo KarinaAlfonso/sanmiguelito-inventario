@@ -70,8 +70,10 @@ public final class FormularioProducto {
         aviso.getStyleClass().add("mensaje-error");
         aviso.setWrapText(true);
         aviso.setMaxWidth(440);
-        aviso.managedProperty().bind(aviso.visibleProperty());
-        aviso.setVisible(false);
+        aviso.setPrefWidth(440);
+        // Espacio reservado para dos líneas: el formulario no cambia de tamaño cuando aparece el aviso.
+        aviso.setMinHeight(34);
+        aviso.setPrefHeight(34);
 
         TextField precio = Ui.pesos(new TextField(nuevo ? "" : String.valueOf(existente.precioVenta)), 8);
         precio.setPromptText("Mínimo 50, en múltiplos de 50");
@@ -83,16 +85,34 @@ public final class FormularioProducto {
         notaCodigo.getStyleClass().add("nota");
         notaCodigo.setWrapText(true);
         notaCodigo.setMaxWidth(440);
+        notaCodigo.setPrefWidth(440);
+        notaCodigo.setMinHeight(32);
+        notaCodigo.setPrefHeight(32);
+        java.util.List<String> categorias = java.util.List.copyOf(categoria.getItems());
 
         // Código automático según la categoría.
         Runnable actualizarCodigo = () -> {
             String cat = textoCategoria(categoria);
             if (nuevo) {
-                String c = ctx.productos.siguienteCodigo(cat);
-                codigo.setText(c);
-                notaCodigo.setText(c.isEmpty()
-                        ? "Elija una categoría de la lista o escriba una nueva para asignar el código automáticamente."
-                        : "El código " + c + " se asigna automáticamente según la categoría.");
+                String exacta = categorias.stream().filter(x -> mismaCategoria(x, cat)).findFirst().orElse(null);
+                java.util.List<String> parecidas = exacta != null || cat.isBlank() ? java.util.List.of()
+                        : categorias.stream().filter(x -> empiezaIgual(x, cat)).toList();
+                if (cat.isBlank()) {
+                    codigo.setText("");
+                    notaCodigo.setText("Elija una categoría de la lista o escriba una nueva; el código se asigna automáticamente.");
+                } else if (!parecidas.isEmpty()) {
+                    // Mientras se escribe el nombre de una categoría que ya existe no se propone una nueva.
+                    codigo.setText("");
+                    notaCodigo.setText("¿Quiso decir " + String.join(", ", parecidas.stream().map(x -> "«" + x + "»").toList())
+                            + "? Elíjala en la lista o termine de escribir la categoría nueva.");
+                } else {
+                    String c = ctx.productos.siguienteCodigo(cat);
+                    codigo.setText(c);
+                    notaCodigo.setText(c.isEmpty() ? "La categoría solo puede tener letras y espacios (entre 3 y 30)."
+                            : exacta != null ? "El código " + c + " se asigna automáticamente según la categoría."
+                            : "Categoría nueva: los productos de esta categoría tendrán códigos " + c.substring(0, c.indexOf('-')) + "-001, "
+                              + c.substring(0, c.indexOf('-')) + "-002…");
+                }
             } else {
                 boolean otra = !cat.isBlank() && !mismaCategoria(cat, existente.categoria);
                 String c = otra ? ctx.productos.siguienteCodigo(cat) : existente.codigo;
@@ -103,15 +123,14 @@ public final class FormularioProducto {
                         : "Las existencias solo cambian con entradas, salidas y ventas.");
             }
         };
+        // Al elegir en la lista también cambia el texto del editor, así que basta con escuchar el texto.
         categoria.getEditor().textProperty().addListener((o, a, n) -> actualizarCodigo.run());
-        categoria.valueProperty().addListener((o, a, n) -> actualizarCodigo.run());
 
         // Aviso inmediato de producto repetido.
         Runnable revisarNombre = () -> {
             Optional<Producto> igual = ctx.productos.mismoNombre(nombre.getText(), nuevo ? null : existente.codigo);
-            aviso.setVisible(igual.isPresent());
-            igual.ifPresent(x -> aviso.setText("Ya existe «" + x.nombre + "» (" + x.codigo + ", " + x.categoria + ")"
-                    + (x.activo ? "." : ", desactivado.") + " No se puede registrar dos veces."));
+            aviso.setText(igual.map(x -> "Ya existe «" + x.nombre + "» (" + x.codigo + ", " + x.categoria + ")"
+                    + (x.activo ? "" : ", desactivado") + ". No se puede registrar dos veces.").orElse(""));
         };
         nombre.textProperty().addListener((o, a, n) -> revisarNombre.run());
 
@@ -177,5 +196,10 @@ public final class FormularioProducto {
 
     private static boolean mismaCategoria(String a, String b) {
         return com.sanmiguelito.servicio.Categorias.iguales(a, b);
+    }
+
+    /** true si la categoría existente empieza como lo que se lleva escrito («pap» → Papelería). */
+    private static boolean empiezaIgual(String existente, String escrito) {
+        return com.sanmiguelito.servicio.Categorias.empiezaIgual(existente, escrito);
     }
 }

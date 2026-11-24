@@ -50,6 +50,12 @@ public final class Categorias {
         return c;
     }
 
+    /** true si la categoría existente empieza como el texto escrito, sin importar mayúsculas ni tildes. */
+    public static boolean empiezaIgual(String existente, String escrito) {
+        String e = ServicioProductos.normalizar(existente), t = ServicioProductos.normalizar(escrito).replaceAll("\\s+", " ");
+        return !t.isEmpty() && e.startsWith(t) && !e.equals(t);
+    }
+
     /** true si los dos textos son la misma categoría (sin importar mayúsculas, tildes ni plural). */
     public static boolean iguales(String a, String b) {
         return clave(a).equals(clave(b));
