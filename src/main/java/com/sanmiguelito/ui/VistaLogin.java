@@ -80,7 +80,12 @@ public class VistaLogin {
         javafx.scene.image.ImageView logo = Ui.logo(110);
         HBox cabeza = new HBox(logo);
         cabeza.setAlignment(Pos.CENTER);
-        VBox form = new VBox(12, cabeza, titulo, sub, Ui.campo("Usuario", usuario), Ui.campo("Contraseña", clave), mensaje, ingresar);
+        Button cerrar = Ui.secundario("Cerrar programa");
+        cerrar.setMaxWidth(Double.MAX_VALUE);
+        cerrar.setPrefHeight(42);
+        cerrar.setCancelButton(false);
+        cerrar.setOnAction(e -> Ui.salir());   // pregunta antes de cerrar
+        VBox form = new VBox(12, cabeza, titulo, sub, Ui.campo("Usuario", usuario), Ui.campo("Contraseña", clave), mensaje, ingresar, cerrar);
         if (primerUso) {
             Label nota = new Label("Primer uso del sistema. Usuarios iniciales:\n"
                     + "· admin / SanMiguelito2026 (administrador)\n"
