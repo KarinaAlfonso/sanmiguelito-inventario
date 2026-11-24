@@ -45,7 +45,26 @@ public final class Ui {
 
     /** Muestra el diálogo encima de la ventana principal. */
     public static void propietario(javafx.scene.control.Dialog<?> d) {
-        if (ventana != null && ventana.isShowing() && d.getOwner() == null) d.initOwner(ventana);
+        if (d.getOwner() != null || d.isShowing()) return;
+        javafx.stage.Window w = ventanaActiva();
+        if (w != null) d.initOwner(w);
+    }
+
+    /**
+     * Ventana sobre la que debe aparecer un mensaje o formulario: la que tiene el foco o, si ninguna lo
+     * tiene, el último formulario abierto. Así un aviso que sale desde un formulario (por ejemplo, un
+     * precio inválido) queda encima de ese formulario y no escondido detrás de él.
+     */
+    static javafx.stage.Window ventanaActiva() {
+        javafx.stage.Window enfocada = null, ultimaModal = null;
+        for (javafx.stage.Window w : javafx.stage.Window.getWindows()) {
+            if (!w.isShowing()) continue;
+            if (w.isFocused()) enfocada = w;
+            if (w instanceof javafx.stage.Stage s && s.getModality() != javafx.stage.Modality.NONE) ultimaModal = w;
+        }
+        if (enfocada != null) return enfocada;
+        if (ultimaModal != null) return ultimaModal;
+        return ventana != null && ventana.isShowing() ? ventana : null;
     }
 
     private Ui() { }

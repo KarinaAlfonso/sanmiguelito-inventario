@@ -77,6 +77,23 @@ public final class FormularioProducto {
 
         TextField precio = Ui.pesos(new TextField(nuevo ? "" : String.valueOf(existente.precioVenta)), 8);
         precio.setPromptText("Mínimo 50, en múltiplos de 50");
+        // Aviso inmediato del precio mínimo y de los múltiplos de 50, mientras se escribe.
+        Label avisoPrecio = new Label();
+        avisoPrecio.getStyleClass().add("mensaje-error");
+        avisoPrecio.setStyle("-fx-font-size: 11px;");
+        avisoPrecio.setMinHeight(16);
+        Runnable revisarPrecio = () -> {
+            String t = precio.getText() == null ? "" : precio.getText().replace(".", "");
+            if (t.isEmpty()) { avisoPrecio.setText(""); return; }
+            long v = Long.parseLong(t);
+            long min = ServicioProductos.PRECIO_MINIMO;
+            if (v < min) avisoPrecio.setText("El precio mínimo es " + Formato.pesos(min) + ".");
+            else if (v % min != 0) avisoPrecio.setText("Use múltiplos de $ 50: " + Formato.pesos(v / min * min) + " o " + Formato.pesos((v / min + 1) * min) + ".");
+            else if (v > ServicioProductos.PRECIO_MAXIMO) avisoPrecio.setText("El precio máximo es " + Formato.pesos(ServicioProductos.PRECIO_MAXIMO) + ".");
+            else avisoPrecio.setText("");
+        };
+        precio.textProperty().addListener((o, a, n) -> revisarPrecio.run());
+        revisarPrecio.run();
         TextField minimo = Ui.soloDigitos(new TextField(nuevo ? "5" : String.valueOf(existente.cantidadMinima)), 6);
         TextField existencias = Ui.soloDigitos(new TextField(nuevo ? "0" : String.valueOf(existente.existencias)), 6);
         existencias.setDisable(!nuevo);
@@ -143,8 +160,10 @@ public final class FormularioProducto {
         g.add(notaCodigo, 0, 1, 2, 1);
         g.add(Ui.campo("Nombre del producto", nombre), 0, 2, 2, 1);
         g.add(aviso, 0, 3, 2, 1);
-        g.add(Ui.campo("Precio de venta ($)", precio), 0, 4);
-        g.add(Ui.campo("Cantidad mínima", minimo), 1, 4);
+        g.add(new javafx.scene.layout.VBox(2, Ui.campo("Precio de venta ($)", precio), avisoPrecio), 0, 4);
+        javafx.scene.Node campoMinimo = Ui.campo("Cantidad mínima", minimo);
+        GridPane.setValignment(campoMinimo, javafx.geometry.VPos.TOP);
+        g.add(campoMinimo, 1, 4);
         if (nuevo && cantidadInicial) g.add(Ui.campo("Cantidad inicial", existencias), 0, 5, 2, 1);
         if (!nuevo) g.add(Ui.campo("Existencias (se modifican con entradas, salidas y ventas)", existencias), 0, 5, 2, 1);
         Label nota = new Label("La cantidad mínima es el límite para la alerta de pocas existencias.");
