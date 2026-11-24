@@ -8,6 +8,8 @@ public class Usuario {
     public String hashContrasena;   // PBKDF2 en Base64
     public String sal;              // sal aleatoria en Base64
     public boolean activo = true;
+    /** true cuando la contraseña la asignó otra persona (usuario nuevo o restablecido) y debe cambiarse al ingresar. */
+    public boolean debeCambiarContrasena;
 
     public Usuario() { }
 

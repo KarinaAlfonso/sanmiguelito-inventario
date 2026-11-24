@@ -18,27 +18,50 @@ public class ServicioInventario {
 
     public ServicioInventario(Repositorio repo) { this.repo = repo; }
 
+    public static final int LONGITUD_MOTIVO = 100;
+
     /** RF-007: registra las unidades recibidas y aumenta las existencias. */
     public synchronized Movimiento registrarEntrada(String codigo, int cantidad, String motivo, String usuario) {
         if (cantidad <= 0) throw new ErrorNegocio("La cantidad recibida debe ser mayor que cero.");
-        if (motivo == null || motivo.isBlank()) throw new ErrorNegocio("Indique el origen de la entrada (por ejemplo, el proveedor o la compra).");
-        return mover(codigo, cantidad, TipoMovimiento.ENTRADA, motivo.trim(), usuario);
+        if (cantidad > ServicioProductos.CANTIDAD_MAXIMA)
+            throw new ErrorNegocio("La cantidad no puede superar " + ServicioProductos.CANTIDAD_MAXIMA + " unidades por movimiento.");
+        String m = validarMotivo(motivo, "Indique el origen de la entrada (por ejemplo, el proveedor o la compra).");
+        return mover(codigo, cantidad, TipoMovimiento.ENTRADA, m, usuario);
     }
 
     /** RF-008 y RF-009: registra una salida distinta a la venta (daño, pérdida, uso interno) validando existencias. */
     public synchronized Movimiento registrarSalida(String codigo, int cantidad, String motivo, String usuario) {
         if (cantidad <= 0) throw new ErrorNegocio("La cantidad de la salida debe ser mayor que cero.");
-        if (motivo == null || motivo.isBlank()) throw new ErrorNegocio("Indique el motivo de la salida (daño, pérdida, uso interno, etc.).");
-        return mover(codigo, -cantidad, TipoMovimiento.SALIDA, motivo.trim(), usuario);
+        if (cantidad > ServicioProductos.CANTIDAD_MAXIMA)
+            throw new ErrorNegocio("La cantidad no puede superar " + ServicioProductos.CANTIDAD_MAXIMA + " unidades por movimiento.");
+        String m = validarMotivo(motivo, "Indique el motivo de la salida (daño, pérdida, uso interno, etc.).");
+        return mover(codigo, -cantidad, TipoMovimiento.SALIDA, m, usuario);
+    }
+
+    private static String validarMotivo(String motivo, String mensajeVacio) {
+        String m = motivo == null ? "" : motivo.trim().replaceAll("\\s+", " ");
+        if (m.isEmpty()) throw new ErrorNegocio(mensajeVacio);
+        if (m.length() < 3) throw new ErrorNegocio("Describa el origen o motivo con al menos 3 caracteres.");
+        if (m.length() > LONGITUD_MOTIVO) throw new ErrorNegocio("El origen o motivo no puede superar " + LONGITUD_MOTIVO + " caracteres.");
+        if (!m.matches("[\\p{L}\\p{N} .,;:()/#%°+&'\"-]+"))
+            throw new ErrorNegocio("El origen o motivo contiene caracteres no permitidos. Use letras, números y signos de puntuación comunes.");
+        if (!m.matches(".*\\p{L}.*")) throw new ErrorNegocio("Describa el origen o motivo con palabras (por ejemplo, «Compra a proveedor»).");
+        return Character.toUpperCase(m.charAt(0)) + m.substring(1);
     }
 
     private Movimiento mover(String codigo, int delta, TipoMovimiento tipo, String motivo, String usuario) {
+        if (codigo == null || codigo.isBlank()) throw new ErrorNegocio("Seleccione el producto en la lista.");
         List<Producto> productos = repo.productos.leer();
-        Producto p = productos.stream().filter(x -> x.codigo.equals(codigo)).findFirst()
-                .orElseThrow(() -> new ErrorNegocio("Seleccione un producto registrado."));
+        Producto p = productos.stream().filter(x -> x.codigo.equalsIgnoreCase(codigo.trim())).findFirst()
+                .orElseThrow(() -> new ErrorNegocio("El producto seleccionado ya no existe. Actualice la lista."));
         if (!p.activo) throw new ErrorNegocio("El producto «" + p.nombre + "» está desactivado.");
         if (p.existencias + delta < 0)
-            throw new ErrorNegocio("No hay unidades suficientes de «" + p.nombre + "». Existencias actuales: " + p.existencias + ".");
+            throw new ErrorNegocio(p.existencias == 0
+                    ? "«" + p.nombre + "» está agotado: no se puede registrar la salida."
+                    : "No hay unidades suficientes de «" + p.nombre + "». Existencias actuales: " + p.existencias + ".");
+        if ((long) p.existencias + delta > ServicioProductos.CANTIDAD_MAXIMA)
+            throw new ErrorNegocio("Con esta entrada las existencias de «" + p.nombre + "» superarían el máximo de "
+                    + ServicioProductos.CANTIDAD_MAXIMA + " unidades. Verifique la cantidad.");
         p.existencias += delta;
         repo.productos.guardar(productos);
         List<Movimiento> movs = repo.movimientos.leer();

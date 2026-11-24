@@ -23,6 +23,9 @@ public class VistaPrincipal {
     private final Runnable alCerrarSesion;
     private final BorderPane raiz = new BorderPane();
     private final List<Button> botones = new ArrayList<>();
+    /** La pantalla de ventas se conserva durante la sesión para no perder la venta en curso al cambiar de módulo. */
+    private VistaVentas vistaVentas;
+    private Node nodoVentas;
 
     public VistaPrincipal(Contexto ctx, Runnable alCerrarSesion) {
         this.ctx = ctx;
@@ -47,7 +50,15 @@ public class VistaPrincipal {
         VBox menu = new VBox(2);
         menu.setPadding(new Insets(12, 0, 0, 0));
         Button inicio = opcion(menu, "Inicio", () -> new VistaInicio(ctx, this::navegarVentas).vista());
-        opcion(menu, "Ventas", () -> new VistaVentas(ctx).vista());
+        opcion(menu, "Ventas", () -> {
+            if (vistaVentas == null) {
+                vistaVentas = new VistaVentas(ctx);
+                nodoVentas = vistaVentas.vista();
+            } else {
+                vistaVentas.refrescar();
+            }
+            return nodoVentas;
+        });
         opcion(menu, "Productos", () -> new VistaProductos(ctx).vista());
         opcion(menu, "Entradas y salidas", () -> new VistaInventario(ctx).vista());
         opcion(menu, "Movimientos", () -> new VistaMovimientos(ctx).vista());
@@ -67,7 +78,9 @@ public class VistaPrincipal {
         salir.getStyleClass().add("btn-secundario");
         salir.setMaxWidth(Double.MAX_VALUE);
         salir.setOnAction(e -> {
-            if (Ui.confirmar("Cerrar sesión", "¿Desea cerrar la sesión de " + ctx.sesion().nombreCompleto + "?")) alCerrarSesion.run();
+            String aviso = vistaVentas != null && vistaVentas.hayVentaEnCurso()
+                    ? "\n\nHay una venta en curso sin confirmar; si cierra la sesión se descartará." : "";
+            if (Ui.confirmar("Cerrar sesión", "¿Desea cerrar la sesión de " + ctx.sesion().nombreCompleto + "?" + aviso)) alCerrarSesion.run();
         });
         VBox pie = new VBox(4, usuario, rol, salir);
         pie.setPadding(new Insets(12, 16, 0, 16));
@@ -85,6 +98,9 @@ public class VistaPrincipal {
     }
 
     /** Muestra un contenido ya construido marcando su opción del menú (usado en la documentación). */
+    /** true si hay una venta sin confirmar (la ventana principal pregunta antes de cerrarse). */
+    public boolean hayVentaEnCurso() { return vistaVentas != null && vistaVentas.hayVentaEnCurso(); }
+
     public void mostrar(String opcionMenu, Node contenido) {
         botones.forEach(x -> x.getStyleClass().remove("menu-activo"));
         botones.stream().filter(b -> b.getText().equals(opcionMenu)).findFirst()

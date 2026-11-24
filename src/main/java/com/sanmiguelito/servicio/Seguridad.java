@@ -46,6 +46,10 @@ public final class Seguridad {
     public static void validarContrasena(String contrasena) {
         if (contrasena == null || contrasena.length() < 8)
             throw new ErrorNegocio("La contraseña debe tener al menos 8 caracteres.");
+        if (contrasena.length() > 64)
+            throw new ErrorNegocio("La contraseña no puede superar 64 caracteres.");
+        if (!contrasena.equals(contrasena.trim()))
+            throw new ErrorNegocio("La contraseña no puede empezar ni terminar con espacios.");
         if (!contrasena.matches(".*[A-Za-z].*") || !contrasena.matches(".*\\d.*"))
             throw new ErrorNegocio("La contraseña debe contener al menos una letra y un número.");
     }

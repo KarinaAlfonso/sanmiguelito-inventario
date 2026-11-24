@@ -55,6 +55,7 @@ public class VistaUsuarios {
 
     private Dialog<ButtonType> dialogo(String titulo, String encabezado, ButtonType ok) {
         Dialog<ButtonType> d = new Dialog<>();
+        Ui.propietario(d);
         d.setTitle(titulo);
         d.setHeaderText(encabezado);
         d.getDialogPane().getStylesheets().add(getClass().getResource("/estilos.css").toExternalForm());
@@ -67,15 +68,16 @@ public class VistaUsuarios {
         ButtonType guardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
         Dialog<ButtonType> d = dialogo(nuevo ? "Nuevo usuario" : "Modificar usuario",
                 nuevo ? "Registrar un usuario" : "Modificar el usuario «" + u.usuario + "»", guardar);
-        TextField login = new TextField(nuevo ? "" : u.usuario);
+        TextField login = Ui.limitar(new TextField(nuevo ? "" : u.usuario), 20);
+        login.setPromptText("Ej.: maria.lopez");
         login.setDisable(!nuevo);
-        TextField nombre = new TextField(nuevo ? "" : u.nombreCompleto);
+        TextField nombre = Ui.limitar(new TextField(nuevo ? "" : u.nombreCompleto), 60);
         nombre.setPrefWidth(320);
         ComboBox<Rol> rol = new ComboBox<>();
         rol.getItems().setAll(Rol.values());
         rol.setValue(nuevo ? Rol.VENDEDOR : u.rol);
-        PasswordField clave = new PasswordField();
-        PasswordField repetir = new PasswordField();
+        PasswordField clave = Ui.limitar(new PasswordField(), 64);
+        PasswordField repetir = Ui.limitar(new PasswordField(), 64);
         CheckBox activo = new CheckBox("Usuario activo");
         activo.setSelected(nuevo || u.activo);
         GridPane g = new GridPane();
@@ -86,11 +88,15 @@ public class VistaUsuarios {
         g.add(Ui.campo("Rol", rol), 1, 0);
         g.add(Ui.campo("Nombre completo", nombre), 0, 1, 2, 1);
         if (nuevo) {
-            g.add(Ui.campo("Contraseña", clave), 0, 2);
-            g.add(Ui.campo("Repetir contraseña", repetir), 1, 2);
-            javafx.scene.control.Label n = new javafx.scene.control.Label("Mínimo 8 caracteres, con al menos una letra y un número.");
+            g.add(Ui.campo("Contraseña temporal", clave), 0, 2);
+            g.add(Ui.campo("Repetir contraseña temporal", repetir), 1, 2);
+            javafx.scene.control.Label n = new javafx.scene.control.Label("Entregue esta contraseña temporal al nuevo usuario. "
+                    + "En su primer ingreso el sistema le pedirá cambiarla por una personal.");
             n.getStyleClass().add("nota");
+            n.setWrapText(true);
+            n.setMaxWidth(420);
             g.add(n, 0, 3, 2, 1);
+            g.add(Ui.requisitosContrasena(clave, repetir, false), 0, 4, 2, 1);
         } else {
             g.add(activo, 0, 2, 2, 1);
         }
@@ -119,15 +125,21 @@ public class VistaUsuarios {
         if (u == null) return;
         ButtonType guardar = new ButtonType("Restablecer", ButtonBar.ButtonData.OK_DONE);
         Dialog<ButtonType> d = dialogo("Restablecer contraseña", "Nueva contraseña para «" + u.usuario + "»", guardar);
-        PasswordField clave = new PasswordField();
-        PasswordField repetir = new PasswordField();
-        d.getDialogPane().setContent(new VBox(10, Ui.campo("Nueva contraseña", clave), Ui.campo("Repetir contraseña", repetir)));
+        PasswordField clave = Ui.limitar(new PasswordField(), 64);
+        PasswordField repetir = Ui.limitar(new PasswordField(), 64);
+        javafx.scene.control.Label n = new javafx.scene.control.Label("Use esta opción cuando el usuario olvide su contraseña. "
+                + "Asigne una contraseña temporal y entréguesela; al ingresar, el sistema le pedirá cambiarla por una personal.");
+        n.getStyleClass().add("nota");
+        n.setWrapText(true);
+        n.setMaxWidth(420);
+        d.getDialogPane().setContent(new VBox(10, n, Ui.campo("Contraseña temporal", clave),
+                Ui.campo("Repetir contraseña temporal", repetir), Ui.requisitosContrasena(clave, repetir)));
         Button b = (Button) d.getDialogPane().lookupButton(guardar);
         b.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
             boolean ok = Ui.ejecutar(d.getTitle(), () -> {
                 ctx.exigirAdministrador();
                 VistaProductos.exigir(clave.getText().equals(repetir.getText()), "Las contraseñas no coinciden.");
-                ctx.usuarios.cambiarContrasena(u.usuario, clave.getText());
+                ctx.usuarios.restablecerContrasena(u.usuario, clave.getText());
             });
             if (!ok) ev.consume();
         });

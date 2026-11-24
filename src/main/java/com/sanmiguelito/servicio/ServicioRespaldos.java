@@ -1,10 +1,14 @@
 package com.sanmiguelito.servicio;
 
+import com.sanmiguelito.datos.ErrorDatos;
 import com.sanmiguelito.datos.Repositorio;
+import com.sanmiguelito.modelo.Rol;
+import com.sanmiguelito.modelo.Usuario;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,8 +37,9 @@ public class ServicioRespaldos {
     public synchronized Path crearRespaldo(String etiqueta) {
         try {
             Files.createDirectories(repo.carpetaRespaldos());
-            String nombre = "respaldo_" + LocalDateTime.now().format(NOMBRE) + (etiqueta == null ? "" : "_" + etiqueta) + ".zip";
-            Path destino = repo.carpetaRespaldos().resolve(nombre);
+            String base = "respaldo_" + LocalDateTime.now().format(NOMBRE) + (etiqueta == null ? "" : "_" + etiqueta);
+            Path destino = repo.carpetaRespaldos().resolve(base + ".zip");
+            for (int i = 2; Files.exists(destino); i++) destino = repo.carpetaRespaldos().resolve(base + "_" + i + ".zip");
             try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(destino))) {
                 for (String a : ARCHIVOS) {
                     Path origen = repo.carpetaDatos().resolve(a);
@@ -52,6 +57,8 @@ public class ServicioRespaldos {
 
     /** Copia un respaldo a otra ubicación, por ejemplo una memoria USB. */
     public Path copiarA(Path respaldo, Path carpetaDestino) {
+        if (respaldo == null || !Files.isRegularFile(respaldo)) throw new ErrorNegocio("Seleccione el respaldo que desea copiar.");
+        if (carpetaDestino == null || !Files.isDirectory(carpetaDestino)) throw new ErrorNegocio("Seleccione una carpeta de destino válida.");
         try {
             Path destino = carpetaDestino.resolve(respaldo.getFileName());
             Files.copy(respaldo, destino, StandardCopyOption.REPLACE_EXISTING);
@@ -79,37 +86,76 @@ public class ServicioRespaldos {
      */
     public synchronized void restaurar(Path respaldo) {
         if (respaldo == null || !Files.isRegularFile(respaldo)) throw new ErrorNegocio("Seleccione un archivo de respaldo válido.");
-        List<String> encontrados = new ArrayList<>();
+        if (!respaldo.getFileName().toString().toLowerCase().endsWith(".zip"))
+            throw new ErrorNegocio("El respaldo debe ser un archivo .zip creado por el sistema.");
+
+        // 1. Se lee y se valida todo el contenido antes de tocar los datos actuales.
+        Map<String, byte[]> contenido = new HashMap<>();
         try (ZipInputStream zip = new ZipInputStream(Files.newInputStream(respaldo))) {
             ZipEntry e;
-            while ((e = zip.getNextEntry()) != null) encontrados.add(e.getName());
-        } catch (IOException ex) {
+            while ((e = zip.getNextEntry()) != null) {
+                if (!ARCHIVOS.contains(e.getName())) continue;   // solo se aceptan los archivos de datos conocidos
+                contenido.put(e.getName(), leerLimitado(zip));
+            }
+        } catch (IOException | IllegalArgumentException ex) {
             throw new ErrorNegocio("El archivo seleccionado no es un respaldo válido.");
         }
-        if (!encontrados.contains("productos.json") || !encontrados.contains("usuarios.json"))
+        if (!contenido.containsKey("productos.json") || !contenido.containsKey("usuarios.json"))
             throw new ErrorNegocio("El archivo seleccionado no contiene los datos del sistema.");
+        try {
+            List<Usuario> usuarios = repo.usuarios.interpretar(contenido.get("usuarios.json"));
+            repo.productos.interpretar(contenido.get("productos.json"));
+            if (contenido.containsKey("movimientos.json")) repo.movimientos.interpretar(contenido.get("movimientos.json"));
+            if (contenido.containsKey("ventas.json")) repo.ventas.interpretar(contenido.get("ventas.json"));
+            if (usuarios.stream().noneMatch(u -> u.activo && u.rol == Rol.ADMINISTRADOR && u.usuario != null && u.hashContrasena != null))
+                throw new ErrorNegocio("El respaldo no tiene un administrador activo; si se restaurara nadie podría administrar el sistema.");
+        } catch (ErrorDatos ex) {
+            throw new ErrorNegocio("El respaldo está dañado y no se restauró. Los datos actuales no se modificaron.\nDetalle: " + ex.getMessage());
+        }
+
+        // 2. Copia del estado actual para poder deshacer, y reemplazo de los archivos.
         crearRespaldo("antes_de_restaurar");
         try {
             Files.createDirectories(repo.carpetaDatos());
-            try (ZipInputStream zip = new ZipInputStream(Files.newInputStream(respaldo))) {
-                ZipEntry e;
-                while ((e = zip.getNextEntry()) != null) {
-                    if (!ARCHIVOS.contains(e.getName())) continue;   // solo se aceptan los archivos de datos conocidos
-                    Path temporal = repo.carpetaDatos().resolve(e.getName() + ".restaurar");
-                    try (OutputStream out = Files.newOutputStream(temporal)) {
-                        copiar(zip, out);
-                    }
-                    Files.move(temporal, repo.carpetaDatos().resolve(e.getName()), StandardCopyOption.REPLACE_EXISTING);
-                }
+            for (Map.Entry<String, byte[]> e : contenido.entrySet()) {
+                Path temporal = repo.carpetaDatos().resolve(e.getKey() + ".restaurar");
+                Files.write(temporal, e.getValue());
+                Files.move(temporal, repo.carpetaDatos().resolve(e.getKey()), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException ex) {
             throw new ErrorNegocio("No fue posible restaurar el respaldo: " + ex.getMessage());
         }
     }
 
-    private static void copiar(InputStream in, OutputStream out) throws IOException {
+    /**
+     * Crea un respaldo automático si todavía no hay uno del día y conserva solo los
+     * {@value #AUTOMATICOS_CONSERVADOS} respaldos automáticos más recientes.
+     *
+     * @return el respaldo creado, o null si ya existía uno del día
+     */
+    public synchronized Path respaldoAutomaticoDelDia() {
+        String hoy = "respaldo_" + LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        if (listar().stream().anyMatch(p -> p.getFileName().toString().startsWith(hoy) && p.getFileName().toString().contains("_automatico")))
+            return null;
+        Path creado = crearRespaldo("automatico");
+        List<Path> automaticos = listar().stream().filter(p -> p.getFileName().toString().contains("_automatico")).toList();
+        for (int i = AUTOMATICOS_CONSERVADOS; i < automaticos.size(); i++) {
+            try { Files.deleteIfExists(automaticos.get(i)); } catch (IOException ignorado) { /* se intenta de nuevo otro día */ }
+        }
+        return creado;
+    }
+
+    public static final int AUTOMATICOS_CONSERVADOS = 15;
+    private static final int TAMANO_MAXIMO = 50 * 1024 * 1024;
+
+    private static byte[] leerLimitado(InputStream in) throws IOException {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
         byte[] buf = new byte[8192];
         int n;
-        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+        while ((n = in.read(buf)) > 0) {
+            out.write(buf, 0, n);
+            if (out.size() > TAMANO_MAXIMO) throw new IOException("Archivo demasiado grande");
+        }
+        return out.toByteArray();
     }
 }

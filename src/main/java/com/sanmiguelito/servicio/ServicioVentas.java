@@ -44,6 +44,7 @@ public class ServicioVentas {
             if (p == null) throw new ErrorNegocio("Seleccione un producto.");
             if (!p.activo) throw new ErrorNegocio("El producto «" + p.nombre + "» está desactivado.");
             if (cantidad <= 0) throw new ErrorNegocio("La cantidad debe ser mayor que cero.");
+            if (p.existencias <= 0) throw new ErrorNegocio("«" + p.nombre + "» está agotado.");
             ItemVenta existente = items.stream().filter(i -> i.codigoProducto.equals(p.codigo)).findFirst().orElse(null);
             int total = cantidad + (existente == null ? 0 : existente.cantidad);
             if (total > p.existencias)
@@ -60,14 +61,29 @@ public class ServicioVentas {
      */
     public synchronized Venta confirmar(Carrito carrito, Usuario vendedor) {
         if (carrito == null || carrito.vacio()) throw new ErrorNegocio("Agregue al menos un producto a la venta.");
+        if (vendedor == null) throw new ErrorNegocio("Inicie sesión para registrar la venta.");
         List<Producto> productos = repo.productos.leer();
         Map<String, Producto> porCodigo = productos.stream().collect(Collectors.toMap(p -> p.codigo, p -> p));
         for (ItemVenta i : carrito.items()) {
             Producto p = porCodigo.get(i.codigoProducto);
-            if (p == null || !p.activo) throw new ErrorNegocio("El producto «" + i.nombreProducto + "» ya no está disponible.");
+            if (p == null || !p.activo) throw new ErrorNegocio("El producto «" + i.nombreProducto + "» ya no está disponible. Quítelo de la venta.");
             if (i.cantidad > p.existencias)
                 throw new ErrorNegocio("No hay unidades suficientes de «" + p.nombre + "». Disponibles: " + p.existencias + ".");
         }
+        // Si el precio cambió mientras se armaba la venta, se actualiza y se avisa antes de cobrar.
+        StringBuilder cambios = new StringBuilder();
+        for (ItemVenta i : carrito.items()) {
+            Producto p = porCodigo.get(i.codigoProducto);
+            if (p.precioVenta != i.precioUnitario) {
+                cambios.append("\n• ").append(p.nombre).append(": ").append(Formato.pesos(i.precioUnitario))
+                        .append(" → ").append(Formato.pesos(p.precioVenta));
+                i.precioUnitario = p.precioVenta;
+                i.nombreProducto = p.nombre;
+            }
+        }
+        if (cambios.length() > 0)
+            throw new ErrorNegocio("El precio de algunos productos cambió y la venta se actualizó:" + cambios
+                    + "\n\nNuevo total: " + Formato.pesos(carrito.total()) + ". Revise el total y confirme de nuevo.");
         List<Venta> ventas = repo.ventas.leer();
         Venta v = new Venta();
         v.numero = siguienteNumero(ventas);
@@ -93,7 +109,7 @@ public class ServicioVentas {
     }
 
     static String siguienteNumero(List<Venta> ventas) {
-        int max = ventas.stream().map(v -> v.numero).filter(n -> n != null && n.startsWith("V-"))
+        int max = ventas.stream().map(v -> v.numero).filter(n -> n != null && n.matches("V-\\d{1,9}"))
                 .mapToInt(n -> Integer.parseInt(n.substring(2))).max().orElse(0);
         return String.format("V-%06d", max + 1);
     }

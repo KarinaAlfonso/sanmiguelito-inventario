@@ -51,9 +51,9 @@ public class Capturas extends Application {
 
         // movimientos y ventas de demostración
         ctx.inventario.registrarEntrada("PAP-002", 50, "Compra a proveedor", "admin");
-        ctx.inventario.registrarSalida("HOG-001", 1, "Producto dañado", "admin");
+        ctx.inventario.registrarSalida("PLA-002", 1, "Producto dañado", "admin");
         Venta ultima = null;
-        Object[][] ventas = {{"PAP-001", 2, "PAP-002", 3}, {"ASE-001", 1, "ASE-002", 1}, {"PIN-001", 2, "BIS-001", 2}, {"ESC-001", 1, "PAP-003", 1}};
+        Object[][] ventas = {{"PAP-001", 2, "PAP-002", 3}, {"ASE-001", 1, "ASE-002", 1}, {"NAV-001", 2, "FAN-001", 2}, {"LOZ-001", 4, "PAP-003", 1}};
         for (Object[] v : ventas) {
             ServicioVentas.Carrito c = new ServicioVentas.Carrito();
             c.agregar(ctx.productos.porCodigo((String) v[0]).orElseThrow(), (Integer) v[1]);
@@ -72,7 +72,7 @@ public class Capturas extends Application {
             javafx.scene.Node n = vv.vista();
             vv.agregarProducto(ctx.productos.porCodigo("PAP-001").orElseThrow(), 3);
             vv.agregarProducto(ctx.productos.porCodigo("PAP-002").orElseThrow(), 2);
-            vv.agregarProducto(ctx.productos.porCodigo("ESC-001").orElseThrow(), 1);
+            vv.agregarProducto(ctx.productos.porCodigo("LOZ-001").orElseThrow(), 2);
             return marco(ctx, "Ventas", n);
         }, 1366, 900);
         capturar(stage, "04_productos", () -> marco(ctx, "Productos", new VistaProductos(ctx).vista()), 1366, 768);

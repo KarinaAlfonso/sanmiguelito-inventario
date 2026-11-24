@@ -26,10 +26,27 @@ public class Repositorio {
     public Repositorio(Path base) {
         this.base = base;
         Path datos = base.resolve("datos");
-        usuarios = new AlmacenJson<>(datos.resolve("usuarios.json"), Usuario.class);
-        productos = new AlmacenJson<>(datos.resolve("productos.json"), Producto.class);
-        movimientos = new AlmacenJson<>(datos.resolve("movimientos.json"), Movimiento.class);
-        ventas = new AlmacenJson<>(datos.resolve("ventas.json"), Venta.class);
+        usuarios = new AlmacenJson<>(datos.resolve("usuarios.json"), Usuario.class,
+                u -> texto(u.usuario) && u.rol != null && texto(u.sal) && texto(u.hashContrasena) && u.nombreCompleto != null);
+        productos = new AlmacenJson<>(datos.resolve("productos.json"), Producto.class,
+                p -> texto(p.codigo) && texto(p.nombre) && texto(p.categoria) && p.existencias >= 0
+                        && p.precioVenta >= 0 && p.cantidadMinima >= 0);
+        movimientos = new AlmacenJson<>(datos.resolve("movimientos.json"), Movimiento.class,
+                m -> m.tipo != null && texto(m.codigoProducto) && fecha(m.fecha) && m.cantidad > 0);
+        ventas = new AlmacenJson<>(datos.resolve("ventas.json"), Venta.class,
+                v -> v.numero != null && v.numero.matches("V-\\d{1,9}") && fecha(v.fecha) && v.items != null
+                        && v.items.stream().allMatch(i -> i != null && texto(i.codigoProducto) && i.cantidad > 0));
+    }
+
+    private static boolean texto(String s) { return s != null && !s.isBlank(); }
+
+    private static boolean fecha(String iso) {
+        try {
+            java.time.LocalDateTime.parse(iso, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     public static Repositorio predeterminado() {

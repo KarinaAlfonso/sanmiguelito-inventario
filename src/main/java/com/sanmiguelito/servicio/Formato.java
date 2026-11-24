@@ -34,9 +34,14 @@ public final class Formato {
 
     /** Convierte un texto ingresado por el usuario en un valor en pesos (acepta puntos de miles). */
     public static long leerPesos(String texto, String campo) {
-        String limpio = texto == null ? "" : texto.replace("$", "").replace(".", "").replace(" ", "").trim();
-        if (limpio.isEmpty()) throw new ErrorNegocio("El campo " + campo + " es obligatorio.");
-        if (!limpio.matches("\\d{1,10}")) throw new ErrorNegocio("El campo " + campo + " debe ser un valor numérico en pesos, sin decimales.");
+        String t = texto == null ? "" : texto.replace("$", "").replace(" ", "").replace(" ", "").trim();
+        if (t.isEmpty()) throw new ErrorNegocio("El campo " + campo + " es obligatorio.");
+        if (t.contains(",")) throw new ErrorNegocio("El campo " + campo + " no lleva decimales: los pesos colombianos se escriben sin centavos (ej.: 4500 o 4.500).");
+        // Se aceptan 4500 o 4.500 (puntos de miles bien ubicados); «4.5» o «1.2.3» no son precios válidos.
+        if (!t.matches("\\d{1,10}") && !t.matches("\\d{1,3}(\\.\\d{3}){1,3}"))
+            throw new ErrorNegocio("El campo " + campo + " debe ser un valor en pesos, sin letras, signos ni decimales (ej.: 4500 o 4.500).");
+        String limpio = t.replace(".", "");
+        if (limpio.length() > 10) throw new ErrorNegocio("El valor del campo " + campo + " es demasiado grande.");
         return Long.parseLong(limpio);
     }
 

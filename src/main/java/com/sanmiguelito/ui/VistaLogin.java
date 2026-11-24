@@ -37,15 +37,11 @@ public class VistaLogin {
         nombre.setStyle("-fx-text-fill: white; -fx-font-size: 38px; -fx-font-weight: bold;");
         Label tipo = new Label("CACHARRERÍA");
         tipo.setStyle("-fx-text-fill: #FFC800; -fx-font-size: 18px; -fx-font-weight: bold;");
-        Label lema = new Label("Sistema de gestión de ventas e inventario");
-        lema.setStyle("-fx-text-fill: white; -fx-font-size: 15px;");
         Region franja = new Region();
         franja.getStyleClass().add("franja");
         franja.setPrefSize(80, 6);
         franja.setMaxWidth(80);
-        Label ubic = new Label("Carrera 11 #16-101 · Centro Histórico · Tunja");
-        ubic.setStyle("-fx-text-fill: #FAF5EE; -fx-font-size: 12px;");
-        VBox marca = new VBox(10, tipo, nombre, franja, lema, ubic);
+        VBox marca = new VBox(10, tipo, nombre, franja);
         marca.setAlignment(Pos.CENTER_LEFT);
         marca.setPadding(new Insets(40));
 
@@ -54,10 +50,10 @@ public class VistaLogin {
         titulo.getStyleClass().add("login-titulo");
         Label sub = new Label("Ingrese su usuario y contraseña");
         sub.getStyleClass().add("subtitulo");
-        TextField usuario = new TextField();
+        TextField usuario = Ui.limitar(new TextField(), 20);
         usuario.setPromptText("Usuario");
         usuario.setPrefHeight(40);
-        PasswordField clave = new PasswordField();
+        PasswordField clave = Ui.limitar(new PasswordField(), 64);
         clave.setPromptText("Contraseña");
         clave.setPrefHeight(40);
         Label mensaje = new Label();
@@ -89,7 +85,7 @@ public class VistaLogin {
             Label nota = new Label("Primer uso del sistema. Usuarios iniciales:\n"
                     + "· admin / SanMiguelito2026 (administrador)\n"
                     + "· vendedor / Vendedor2026 (vendedor)\n"
-                    + "Cambie estas contraseñas en el módulo Usuarios.");
+                    + "Al ingresar por primera vez, el sistema le pedirá cambiar la contraseña.");
             nota.getStyleClass().add("nota");
             nota.setWrapText(true);
             form.getChildren().add(nota);

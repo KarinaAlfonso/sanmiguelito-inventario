@@ -29,13 +29,14 @@ public class VistaVentas {
     private final TableView<Venta> recientes = Ui.tabla("Todavía no hay ventas hoy.");
     private final Label total = new Label(Formato.pesos(0));
     private final TextField buscar = new TextField();
-    private final TextField cantidad = new TextField("1");
+    private final TextField cantidad = Ui.soloDigitos(new TextField("1"), 6);
 
     public VistaVentas(Contexto ctx) { this.ctx = ctx; }
 
     public Node vista() {
         // ---------------- catálogo
         buscar.setPromptText("Buscar por nombre, código o categoría");
+        Ui.limitar(buscar, 60);
         buscar.textProperty().addListener((o, a, n) -> cargarProductos());
         productos.getColumns().add(Ui.columna("Código", 80, p -> p.codigo));
         productos.getColumns().add(Ui.columna("Producto", 220, p -> p.nombre));
@@ -133,11 +134,24 @@ public class VistaVentas {
         refrescarDetalle();
     }
 
+    /** true si hay productos en la venta en curso (se usa para advertir antes de cerrar sesión). */
+    public boolean hayVentaEnCurso() { return !carrito.vacio(); }
+
+    /** Actualiza la lista de productos, la venta en curso y las ventas del día al volver al módulo. */
+    public void refrescar() {
+        cargarProductos();
+        refrescarDetalle();
+        cargarRecientes();
+    }
+
     private void agregar() {
-        Producto p = productos.getSelectionModel().getSelectedItem();
+        Producto seleccionado = productos.getSelectionModel().getSelectedItem();
         Ui.ejecutar("Agregar producto", () -> {
-            if (p == null) throw new com.sanmiguelito.servicio.ErrorNegocio("Seleccione un producto de la lista.");
+            if (seleccionado == null) throw new com.sanmiguelito.servicio.ErrorNegocio("Seleccione un producto de la lista.");
             int c = Formato.leerEntero(cantidad.getText(), "Cantidad");
+            // Se consultan las existencias actuales, no las que se cargaron al abrir la pantalla.
+            Producto p = ctx.productos.porCodigo(seleccionado.codigo)
+                    .orElseThrow(() -> new com.sanmiguelito.servicio.ErrorNegocio("El producto ya no existe. Actualice la lista."));
             carrito.agregar(p, c);
             cantidad.setText("1");
             refrescarDetalle();
@@ -149,7 +163,7 @@ public class VistaVentas {
         if (!Ui.confirmar("Confirmar venta", "Total a pagar: " + Formato.pesos(carrito.total()) + "\n¿Desea confirmar la venta?")) return;
         final Venta[] hecha = new Venta[1];
         boolean ok = Ui.ejecutar("Confirmar venta", () -> hecha[0] = ctx.ventas.confirmar(carrito, ctx.sesion()));
-        if (!ok) { cargarProductos(); return; }
+        if (!ok) { cargarProductos(); refrescarDetalle(); return; }
         refrescarDetalle();
         cargarProductos();
         cargarRecientes();

@@ -26,6 +26,27 @@ import java.util.function.Function;
 public final class Ui {
 
     public static HostServices hostServices;
+    /** Ventana principal; los mensajes y formularios se muestran encima de ella (también en pantalla completa). */
+    public static javafx.stage.Stage ventana;
+    /** Se consulta antes de salir del sistema (por ejemplo, si hay una venta sin confirmar). */
+    public static java.util.function.BooleanSupplier puedeSalir = () -> true;
+
+    /** Cierra el sistema después de confirmar. */
+    public static void salir() {
+        if (!puedeSalir.getAsBoolean()) return;
+        if (ventana != null) ventana.close();
+        javafx.application.Platform.exit();
+    }
+
+    /** Minimiza la ventana a la barra de tareas. */
+    public static void minimizar() {
+        if (ventana != null) ventana.setIconified(true);
+    }
+
+    /** Muestra el diálogo encima de la ventana principal. */
+    public static void propietario(javafx.scene.control.Dialog<?> d) {
+        if (ventana != null && ventana.isShowing() && d.getOwner() == null) d.initOwner(ventana);
+    }
 
     private Ui() { }
 
@@ -46,6 +67,7 @@ public final class Ui {
         a.setTitle(titulo);
         a.setHeaderText(titulo);
         estilo(a);
+        propietario(a);
         return a.showAndWait().orElse(ButtonType.NO) == ButtonType.YES;
     }
 
@@ -54,6 +76,7 @@ public final class Ui {
         a.setTitle(titulo);
         a.setHeaderText(titulo);
         estilo(a);
+        propietario(a);
         a.showAndWait();
     }
 
@@ -168,6 +191,95 @@ public final class Ui {
         TableColumn<T, String> c = columna(titulo, ancho, valor);
         c.setStyle("-fx-alignment: CENTER-RIGHT;");
         return c;
+    }
+
+    /**
+     * Lista de requisitos de la contraseña que se marcan en verde a medida que se cumplen,
+     * para que el usuario sepa exactamente qué le falta antes de guardar.
+     */
+    public static VBox requisitosContrasena(javafx.scene.control.PasswordField nueva, javafx.scene.control.PasswordField repetir) {
+        return requisitosContrasena(nueva, repetir, true);
+    }
+
+    public static VBox requisitosContrasena(javafx.scene.control.PasswordField nueva, javafx.scene.control.PasswordField repetir,
+                                            boolean distintaDeLaActual) {
+        Label titulo = new Label("La contraseña debe cumplir:");
+        titulo.setStyle("-fx-font-weight: bold; -fx-text-fill: #4A3020;");
+        Label largo = new Label(), letra = new Label(), numero = new Label(), espacios = new Label(), iguales = new Label();
+        Runnable revisar = () -> {
+            String n = nueva.getText(), r = repetir.getText();
+            marcar(largo, n.length() >= 8 && n.length() <= 64, "Entre 8 y 64 caracteres (lleva " + n.length() + ")");
+            marcar(letra, n.matches(".*[A-Za-z].*"), "Al menos una letra (a-z, A-Z)");
+            marcar(numero, n.matches(".*\\d.*"), "Al menos un número (0-9)");
+            marcar(espacios, !n.isEmpty() && n.equals(n.trim()), "Sin espacios al inicio ni al final");
+            marcar(iguales, !n.isEmpty() && n.equals(r), "Las dos contraseñas escritas son iguales");
+        };
+        nueva.textProperty().addListener((o, a, b) -> revisar.run());
+        repetir.textProperty().addListener((o, a, b) -> revisar.run());
+        revisar.run();
+        Label nota = new Label((distintaDeLaActual ? "Además, debe ser diferente de la contraseña actual. " : "") + "Las mayúsculas y minúsculas cuentan: "
+                + "«Tienda2026» y «tienda2026» son contraseñas distintas. Ejemplo válido: Miguelito2026");
+        nota.getStyleClass().add("nota");
+        nota.setWrapText(true);
+        nota.setMaxWidth(400);
+        VBox v = new VBox(4, titulo, largo, letra, numero, espacios, iguales, nota);
+        v.setStyle("-fx-background-color: #FFF8EE; -fx-border-color: #E8D8C8; -fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10 12 10 12;");
+        return v;
+    }
+
+    private static void marcar(Label l, boolean ok, String texto) {
+        l.setText((ok ? "✔  " : "○  ") + texto);
+        l.setStyle(ok ? "-fx-text-fill: #388E3C; -fx-font-weight: bold;" : "-fx-text-fill: #6B5444;");
+    }
+
+    // ---------------------------------------------------------------- restricciones de entrada (RNF-009)
+
+    /** El campo solo acepta dígitos (sin signos, letras, decimales ni espacios) y como máximo {@code max} cifras. */
+    public static javafx.scene.control.TextField soloDigitos(javafx.scene.control.TextField campo, int max) {
+        campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c ->
+                c.getControlNewText().matches("\\d{0," + max + "}") ? c : null));
+        return campo;
+    }
+
+    /** Campo de precio: acepta dígitos y puntos de miles (12.500) hasta {@code max} cifras. */
+    public static javafx.scene.control.TextField pesos(javafx.scene.control.TextField campo, int max) {
+        campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c -> {
+            String t = c.getControlNewText();
+            return t.matches("[\\d.]*") && t.replace(".", "").length() <= max ? c : null;
+        }));
+        return campo;
+    }
+
+    /** Limita la cantidad de caracteres que se pueden escribir en un campo de texto. */
+    public static <C extends javafx.scene.control.TextInputControl> C limitar(C campo, int max) {
+        campo.setTextFormatter(new javafx.scene.control.TextFormatter<String>(c ->
+                c.getControlNewText().length() <= max ? c : null));
+        return campo;
+    }
+
+    /**
+     * Selector de fecha que solo se elige en el calendario (dd/MM/yyyy). Evita que se escriban
+     * fechas inválidas a mano.
+     */
+    public static javafx.scene.control.DatePicker fecha(java.time.LocalDate valor) {
+        javafx.scene.control.DatePicker d = new javafx.scene.control.DatePicker(valor);
+        java.time.format.DateTimeFormatter f = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        d.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(java.time.LocalDate x) { return x == null ? "" : x.format(f); }
+            @Override public java.time.LocalDate fromString(String s) {
+                try { return s == null || s.isBlank() ? null : java.time.LocalDate.parse(s.trim(), f); }
+                catch (java.time.format.DateTimeParseException e) { return d.getValue(); }
+            }
+        });
+        d.setEditable(false);
+        d.setPromptText("dd/mm/aaaa");
+        d.setDayCellFactory(p -> new javafx.scene.control.DateCell() {
+            @Override public void updateItem(java.time.LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                setDisable(empty || item.isAfter(java.time.LocalDate.now()));   // no hay movimientos en el futuro
+            }
+        });
+        return d;
     }
 
     public static <T> TableView<T> tabla(String vacio) {

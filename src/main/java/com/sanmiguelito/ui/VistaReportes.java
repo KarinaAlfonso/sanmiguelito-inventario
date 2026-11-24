@@ -31,8 +31,8 @@ public class VistaReportes {
         ctx.exigirAdministrador();
 
         // --- Reporte de ventas por período, con vista previa
-        DatePicker desde = new DatePicker(LocalDate.now().withDayOfMonth(1));
-        DatePicker hasta = new DatePicker(LocalDate.now());
+        DatePicker desde = Ui.fecha(LocalDate.now().withDayOfMonth(1));
+        DatePicker hasta = Ui.fecha(LocalDate.now());
         Label resumen = new Label();
         resumen.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #960A0A;");
         TableView<Map.Entry<String, long[]>> ventas = Ui.tabla("No hay ventas en el período seleccionado.");

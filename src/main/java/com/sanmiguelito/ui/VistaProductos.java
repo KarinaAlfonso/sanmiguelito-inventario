@@ -7,18 +7,13 @@ import com.sanmiguelito.servicio.Formato;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 
@@ -34,6 +29,7 @@ public class VistaProductos {
 
     public Node vista() {
         buscar.setPromptText("Buscar por nombre, código o categoría");
+        Ui.limitar(buscar, 60);
         buscar.setPrefWidth(360);
         buscar.textProperty().addListener((o, a, n) -> cargar());
         inactivos.selectedProperty().addListener((o, a, n) -> cargar());
@@ -95,70 +91,11 @@ public class VistaProductos {
 
     /** Formulario de registro (p == null) o modificación de un producto. */
     private void formulario(Producto p) {
-        boolean nuevo = p == null;
-        Dialog<ButtonType> d = new Dialog<>();
-        d.setTitle(nuevo ? "Nuevo producto" : "Modificar producto");
-        d.setHeaderText(nuevo ? "Registrar un producto nuevo" : "Modificar «" + p.nombre + "»");
-        d.getDialogPane().getStylesheets().add(getClass().getResource("/estilos.css").toExternalForm());
-        ButtonType guardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
-        d.getDialogPane().getButtonTypes().addAll(guardar, ButtonType.CANCEL);
-
-        TextField codigo = new TextField(nuevo ? "" : p.codigo);
-        codigo.setDisable(!nuevo);
-        codigo.setPromptText("Ej.: PAP-010");
-        TextField nombre = new TextField(nuevo ? "" : p.nombre);
-        ComboBox<String> categoria = new ComboBox<>();
-        categoria.setEditable(true);
-        categoria.getItems().setAll(ctx.productos.categorias());
-        categoria.setValue(nuevo ? "" : p.categoria);
-        categoria.setMaxWidth(Double.MAX_VALUE);
-        TextField precio = new TextField(nuevo ? "" : String.valueOf(p.precioVenta));
-        precio.setPromptText("Ej.: 4500");
-        TextField existencias = new TextField(nuevo ? "0" : String.valueOf(p.existencias));
-        existencias.setDisable(!nuevo);
-        TextField minimo = new TextField(nuevo ? "5" : String.valueOf(p.cantidadMinima));
-
-        GridPane g = new GridPane();
-        g.setHgap(14);
-        g.setVgap(10);
-        g.setPadding(new Insets(10));
-        g.add(Ui.campo("Código", codigo), 0, 0);
-        g.add(Ui.campo("Categoría", categoria), 1, 0);
-        g.add(Ui.campo("Nombre del producto", nombre), 0, 1, 2, 1);
-        g.add(Ui.campo("Precio de venta ($)", precio), 0, 2);
-        g.add(Ui.campo("Cantidad mínima", minimo), 1, 2);
-        g.add(Ui.campo(nuevo ? "Cantidad inicial" : "Existencias (se modifican con entradas y salidas)", existencias), 0, 3, 2, 1);
-        Label nota = new Label(nuevo ? "El código no se podrá cambiar después de guardar el producto."
-                : "El código y las existencias no se modifican desde este formulario.");
-        nota.getStyleClass().add("nota");
-        g.add(nota, 0, 4, 2, 1);
-        nombre.setPrefWidth(420);
-        d.getDialogPane().setContent(g);
-
-        Button btn = (Button) d.getDialogPane().lookupButton(guardar);
-        btn.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            boolean ok = Ui.ejecutar(d.getTitle(), () -> {
-                ctx.exigirAdministrador();
-                Producto datos = new Producto();
-                datos.codigo = nuevo ? codigo.getText() : p.codigo;
-                datos.nombre = nombre.getText();
-                String cat = categoria.getEditor().getText();
-                datos.categoria = cat == null || cat.isBlank() ? categoria.getValue() : cat;
-                datos.precioVenta = Formato.leerPesos(precio.getText(), "Precio de venta");
-                datos.cantidadMinima = Formato.leerEntero(minimo.getText(), "Cantidad mínima");
-                if (nuevo) {
-                    datos.existencias = Formato.leerEntero(existencias.getText(), "Cantidad inicial");
-                    ctx.productos.crear(datos, ctx.sesion().usuario);
-                } else {
-                    ctx.productos.modificar(datos);
-                }
-            });
-            if (!ok) ev.consume();
-        });
-        if (d.showAndWait().orElse(ButtonType.CANCEL) == guardar) {
+        FormularioProducto.mostrar(ctx, p, p == null ? buscar.getText() : null, true).ifPresent(x -> {
             cargar();
-            Ui.info(d.getTitle(), nuevo ? "El producto se registró correctamente." : "Los cambios se guardaron correctamente.");
-        }
+            tabla.getItems().stream().filter(y -> y.codigo.equals(x.codigo)).findFirst()
+                    .ifPresent(y -> { tabla.getSelectionModel().select(y); tabla.scrollTo(y); });
+        });
     }
 
     // ---------------------------------------------------------------- compartido con otras vistas
